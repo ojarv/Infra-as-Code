@@ -1,0 +1,90 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# This configuration relies on master_ip.ps1 script
+
+# Vagrant - Hyper-V config. Credits / Sources:
+# https://terokarvinen.com/2021/two-machine-virtual-network-with-debian-11-bullseye-and-vagrant/
+# https://terokarvinen.com/2023/salt-vagrant/
+# https://github.com/Shinzu/vagrant-hyperv/blob/master/Vagrantfile
+# https://docs.saltproject.io/salt/install-guide/en/latest/topics/install-by-operating-system/debian.html
+# https://developer.hashicorp.com/vagrant/docs/providers/hyperv/configuration
+# https://developer.hashicorp.com/vagrant/docs/provisioning/file
+# https://developer.hashicorp.com/vagrant/docs/triggers/configuration
+# https://docs.vagrantup.com
+# https://vagrantcloud.com/search
+
+
+$master = <<MASTER
+sudo curl -fsSL -o /etc/apt/keyrings/salt-archive-keyring-2023.gpg https://repo.saltproject.io/salt/py3/debian/11/amd64/SALT-PROJECT-GPG-PUBKEY-2023.gpg
+echo "deb [signed-by=/etc/apt/keyrings/salt-archive-keyring-2023.gpg arch=amd64] https://repo.saltproject.io/salt/py3/debian/11/amd64/latest bullseye main" | sudo tee /etc/apt/sources.list.d/salt.list
+sudo apt-get -qq update
+sudo apt-get -qqy install salt-master
+sudo systemctl restart salt-master
+MASTER
+
+$minion = <<MINION
+sudo curl -fsSL -o /etc/apt/keyrings/salt-archive-keyring-2023.gpg https://repo.saltproject.io/salt/py3/debian/11/amd64/SALT-PROJECT-GPG-PUBKEY-2023.gpg
+echo "deb [signed-by=/etc/apt/keyrings/salt-archive-keyring-2023.gpg arch=amd64] https://repo.saltproject.io/salt/py3/debian/11/amd64/latest bullseye main" | sudo tee /etc/apt/sources.list.d/salt.list
+sudo apt-get -qq update
+sudo apt-get -qqy install salt-minion
+MINION
+
+Vagrant.configure("2") do |config|
+	config.vm.box = "generic/debian12"
+	config.vm.synced_folder ".", "/vagrant", disabled: true
+	config.vm.define "master", primary: true do |master|
+		master.vm.hostname = "master"
+		master.vm.provision :shell, inline: $master
+		master.vm.provider "hyperv" do |h|
+			h.linked_clone = true
+			h.cpus = 6
+			h.maxmemory = 1536
+			h.memory = 512
+			h.vmname = "master"
+		end
+	end
+
+	config.vm.define "t001" do |t001|
+		t001.vm.hostname = "t001"
+		t001.vm.provision :shell, inline: $minion
+		t001.vm.provider "hyperv" do |h|
+			h.linked_clone = true
+			h.cpus = 6
+			h.maxmemory = 1536
+			h.memory = 512
+			h.vmname = "t001"
+		end
+		t001.vm.provision "file",
+			source: "./minion",
+			destination: "/tmp/minion",
+			run: "always"
+		t001.vm.provision "shell",
+			inline: "sudo cp /tmp/minion /etc/salt/minion && sudo service salt-minion restart",
+			run: "always"
+	end
+
+	config.vm.define "t002" do |t002|
+		t002.vm.hostname = "t002"
+		t002.vm.provision :shell, inline: $minion
+		t002.vm.provider "hyperv" do |h|
+			h.linked_clone = true
+			h.cpus = 6
+			h.maxmemory = 1536
+			h.memory = 512
+			h.vmname = "t002"
+		end
+		t002.vm.provision "file",
+			source: "./minion",
+			destination: "/tmp/minion",
+			run: "always"
+		t002.vm.provision "shell",
+			inline: "sudo cp /tmp/minion /etc/salt/minion && sudo service salt-minion restart",
+			run: "always"
+	end
+	
+	config.trigger.after :up do |t|
+		t.run = {inline: './master_ip.ps1'}
+		t.only_on = "master"
+	end
+end
