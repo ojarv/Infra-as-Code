@@ -1,0 +1,18 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# Vagrantfile for deploying Windows 11 with Hyper-V
+
+Vagrant.configure("2") do |config|
+	config.vm.box = "gusztavvargadr/windows-11"
+	config.vm.synced_folder ".", "/vagrant", disabled: true
+	config.vm.define "Win11", primary: true do |win|
+		win.vm.provider "hyperv" do |h|
+			h.linked_clone = true
+			h.cpus = 6
+			h.maxmemory = 8096
+			h.memory = 2048
+			h.vmname = "Win11"
+		end
+	end
+end
