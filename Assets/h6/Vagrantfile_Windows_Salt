@@ -1,0 +1,31 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# Sources:
+# https://docs.saltproject.io/salt/install-guide/en/latest/topics/install-by-operating-system/windows.html#windows-nullsoft-exe-install-options
+# https://stackoverflow.com/questions/47110728/powershell-download-and-run-exe-file
+
+Vagrant.configure("2") do |win11|
+	win11.vm.box = "gusztavvargadr/windows-11"
+	win11.vm.hostname = "Win11"
+	win11.vm.synced_folder ".", "/vagrant", disabled: true
+	win11.vm.define "win11", primary: true do |win|
+		win.vm.provider "hyperv" do |h|
+			h.linked_clone = true
+			h.cpus = 6
+			h.maxmemory = 8096
+			h.memory = 2048
+			h.vmname = "Win11"
+		end
+	win11.vm.provision "file",
+		source: "./minion",
+		destination: "C:/ProgramData/Salt Project/Salt/conf/minion",
+		run: "always"
+	win11.vm.provision "shell",
+		inline: 'Set-Location -Path "C:/Users/vagrant"; Invoke-WebRequest -Uri "https://repo.saltproject.io/salt/py3/windows/latest/Salt-Minion-3006.4-Py3-AMD64-Setup.exe" -OutFile "setup.exe"; Start-Process -Wait -FilePath ".\setup.exe" -ArgumentList "/S"; Remove-Item -Path "setup.exe" -Force',
+		run: "once"
+	win11.vm.provision "shell",
+		inline: 'Restart-Service -Name "salt-minion" -Force',
+		run: "always"
+	end
+end
