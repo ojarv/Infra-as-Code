@@ -118,7 +118,7 @@ HUOM!
 
 Pohja: Windows ja Hyper-V asennettuna.
 
-Samassa hostilla kansiossa:
+Hostilla samassa kansiossa:
 * [Vagrantfile](/Assets/h7/Vagrantfile)
 * [init.sls](/Assets/h7/init.sls)
 * [jinja.sls](/Assets/h7/jinja.sls)
