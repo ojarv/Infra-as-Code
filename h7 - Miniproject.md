@@ -120,9 +120,9 @@ Pohja: Windows ja Hyper-V asennettuna.
 
 Hostilla samassa kansiossa:
 * [Vagrantfile](/Assets/h7/Vagrantfile)
+* [master_ip.ps1](/Assets/h7/master_ip.ps1)
 * [init.sls](/Assets/h7/init.sls)
 * [jinja.sls](/Assets/h7/jinja.sls)
-* [master_ip.ps1](/Assets/h7/master_ip.ps1)
 
 ```console
 $ vagrant up
@@ -134,7 +134,7 @@ $ sudo salt '*' state.apply winpro
 
 Tässä luodaan ja provisioidaan Debian-pohjainen Herra ja Windows-pohjainen orja Saltilla ja vaadittavilla konfiguraatioilla.
 
-### ```Vagrantfile```
+### [Vagrantfile](/Assets/h7/Vagrantfile)
 ```ruby
 $master = <<-MASTER
 sudo curl -fsSL -o /etc/apt/keyrings/salt-archive-keyring-2023.gpg https://repo.saltproject.io/salt/py3/debian/11/amd64/SALT-PROJECT-GPG-PUBKEY-2023.gpg
@@ -209,7 +209,7 @@ end
 
 Tämä liittyy purkkafiksiini sille, että Vagrant ei tue kovin hyvin vielä verkkojen määrittelyä Hyper-V:n kanssa. Esitelty ensimmäisen kerran tehtävässä [h2](/h2.md).
 
-### ```master_ip.ps1```
+### [master_ip.ps1](/Assets/h7/master_ip.ps1)
 ```powershell
 $IP = Get-VMNetworkAdapter -VMName master | Select -ExpandProperty IPAddresses
 Set-Content -Path ./minion -Value "master: ${IP}"
@@ -217,7 +217,7 @@ Set-Content -Path ./minion -Value "master: ${IP}"
 
 Tässä on Salt-tilan ```winpro``` ensimmäinen tiedosto, tässä asennetaan Windows-orjalle Firefox, NotePad++ sekä NanaZip. Näiden lisäksi Firefoxille asetetaan muutamat asetukset ja asennetaan kaksi laajennosta uBlockOrigin ja Dark Reader. Lopuksi viitataan Windowsin asetuksia määrittelevään Saltin state tiedostoon (SLS).
 
-### ```init.sls```
+### [init.sls](/Assets/h7/init.sls)
 ```yaml
 ### /srv/salt/winpro/init.sls
 
@@ -311,7 +311,7 @@ Tässä määritellään muutama rekisteriarvo:
 * Säädetään tehtäväpalkki vasempaan reunaan
 * Laitetaan tunnettujen tiedostotyyppien päätteet näkymään
 
-### ```jinja.sls```
+### [jinja.sls](/Assets/h7/jinja.sls)
 ```jinja
 ### /srv/salt/winpro/jinja.sls
 
