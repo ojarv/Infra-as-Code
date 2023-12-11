@@ -1,4 +1,4 @@
-# h6 - Miniproject
+# h7 - Miniproject
 Tämän projektin ideana on provisioida Windows 11 -käyttöjärjestelmä määrittelemilläni asennuksilla ja asetuksilla käyttäen Salttia. Windows 11 -orjana toimii Vagrantilla tehty virtuaalikone [Vagrantfile_Windows](/Assets/h6/Vagrantfile_Windows). Tämän luonnin olen käsitellyt tehtävässä [h6](/h6.md).
 
 Asennuksia:
