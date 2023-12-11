@@ -151,6 +151,8 @@ $ sudo salt '*' state.apply winpro
 ### [Vagrantfile](/Assets/h7/Vagrantfile)
 Tässä luodaan ja provisioidaan Debian-pohjainen Herra ja Windows-pohjainen orja Saltilla. Tarvittattavat konfiguraatiot ja tiedostot kopioidaan tässä Herralle ja orjalle sekä asennetaan Salt.
 
+* ```slmgr.vbs /ato``` -komento piti lisätä, koska teemaasetukset eivät tule voimaan jos Windows ei ole aktivoituneena, huomasin että välillä automaattinen kokeilujakson alkaminen saattoi kestää.
+
 ```ruby
 $master = <<-MASTER
 sudo curl -fsSL -o /etc/apt/keyrings/salt-archive-keyring-2023.gpg https://repo.saltproject.io/salt/py3/debian/11/amd64/SALT-PROJECT-GPG-PUBKEY-2023.gpg
