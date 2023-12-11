@@ -21,14 +21,42 @@ DarkMode2:
 
 TaskbarAlignmentLeft:
   reg.present:
-    - name: HKEY_USERS\.DEFAULT\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced
+    - name: HKEY_USERS\{{ sid }}\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced
     - vname: TaskbarAl
+    - vdata: 0
+    - vtype: REG_DWORD
+
+HideSearchBox:
+  reg.present:
+    - name: HKEY_USERS\{{ sid }}\SOFTWARE\Microsoft\Windows\CurrentVersion\Search
+    - vname: SearchboxTaskbarMode
+    - vdata: 0
+    - vtype: REG_DWORD
+
+TurnOffTaskView:
+  reg.present:
+    - name: HKEY_USERS\{{ sid }}\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced
+    - vname: ShowTaskViewButton
+    - vdata: 0
+    - vtype: REG_DWORD
+
+TurnOffWidgets:
+  reg.present:
+    - name: HKEY_USERS\{{ sid }}\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced
+    - vname: TaskbarDa
+    - vdata: 0
+    - vtype: REG_DWORD
+
+TurnOffChat:
+  reg.present:
+    - name: HKEY_USERS\{{ sid }}\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced
+    - vname: TaskbarMn
     - vdata: 0
     - vtype: REG_DWORD
 
 ShowFileExtensions:
   reg.present:
-    - name: HKEY_USERS\.DEFAULT\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced
+    - name: HKEY_USERS\{{ sid }}\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced
     - vname: HideFileExt
     - vdata: 0
     - vtype: REG_DWORD

@@ -3,14 +3,14 @@ Tämän projektin ideana on provisioida Windows 11 -käyttöjärjestelmä määr
 
 Asennuksia:
 * Firefox (pkg.installed)
-* NotePad++ (pkg.installed)
+* Notepad++ (pkg.installed)
 * NanaZip (cmd.run, idempotenttina)
 
 Määrityksiä:
 * Firefoxin asetuksia ja laajennosten asennus
 * Dark mode
 * Show File Extensions
-* Taskbar Alingment
+* Taskbar
 
 ## Package manager
 Aluksi yritetään saada Firefoxin asennus [Saltin Windows package managerilla](https://docs.saltproject.io/en/latest/topics/windows/windows-package-manager.html) toimimaan.
@@ -38,7 +38,7 @@ https://github.com/saltstack/salt-winrepo.git:
     False
 ```
 
-Tässä törmäsin oikeuksien kanssa ongelmiin. Päädyin nopean vianselvittelyn jälkeen manuaalisesti kopioimaan kyseisen repon kansioon ```/srv/salt/repo-ng/```
+Tässä törmäsin oikeuksien kanssa ongelmiin. Päädyin vianselvittelyn jälkeen manuaalisesti kopioimaan kyseisen repon kansioon ```/srv/salt/win/repo-ng/```
 
 #### git clone https://github.com/saltstack/salt-winrepo-ng.git
 ```console
@@ -87,7 +87,7 @@ Win11.mshome.net:
         old:
 ```
 
-Asennus onnistui, ja orjan puolella näkyy myös asennus.
+Asennus onnistui ja orjan puolella näkyy asennus onnistuneesti.
 
 ## Salt State File
 ### SALT.STATES.PKG
@@ -105,14 +105,28 @@ install:
 Testauksen jälkeen voin todeta, että tämä toimi oletetusti ja yllättävän nopeasti.
 
 ### SALT.STATES.REG
- Lähden konfiguroimaan haluttuja asetuksia. Käytän tässä apuna Saltin Windows rekisteri editointi ominaisuutta [SALT.STATES.REG](https://docs.saltproject.io/en/latest/ref/states/all/salt.states.reg.html).
+ Haluttujen asetusten konfigurointia. Käytän tässä apuna Saltin Windows rekisterin editointi ominaisuutta [SALT.STATES.REG](https://docs.saltproject.io/en/latest/ref/states/all/salt.states.reg.html).
 
-Ensimmäisenä määritellään kaksi laajennosta Firefoxiin, [uBlock Origin](https://github.com/gorhill/uBlock#ublock-origin) ja [Dark Reader](https://darkreader.org/). Tämä onnistuu rekisteriarvoihin nämä lisäämällä ([Lähde](https://admx.help/?Category=Firefox)).
+* Firefoxin asettaminen oletusselaimeksi osottautui hankalaksi, tai ainakaan en löytänyt kovin järkevää ratkaisua tähän.
 
-HUOM!
-**palautus kesken**
-HUOM!
+Tässä oli paljon määrittelyjä, mutta esimerkiksi määritellään kaksi laajennosta Firefoxiin, [uBlock Origin](https://github.com/gorhill/uBlock#ublock-origin) ja [Dark Reader](https://darkreader.org/). Tämä onnistuu rekisteriarvoihin lisäämällä ([Lähde](https://admx.help/?Category=Firefox)). Alla Saltin tila konfiguraatio.
 
+### [init.sls](/Assets/h7/init.sls)
+```yaml
+firefox_uBO:
+  reg.present:
+    - name: HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Mozilla\Firefox\Extensions\Install
+    - vname: "1"
+    - vdata: https://addons.mozilla.org/firefox/downloads/latest/ublock-origin/latest.xpi
+    - vtype: REG_SZ
+
+firefox_DarkReader:
+  reg.present:
+    - name: HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Mozilla\Firefox\Extensions\Install
+    - vname: "2"
+    - vdata: https://addons.mozilla.org/firefox/downloads/latest/darkreader/latest.xpi
+    - vtype: REG_SZ
+```
 
 ## Provisiointi
 
@@ -123,7 +137,9 @@ Hostilla samassa kansiossa:
 * [master_ip.ps1](/Assets/h7/master_ip.ps1)
 * [init.sls](/Assets/h7/init.sls)
 * [jinja.sls](/Assets/h7/jinja.sls)
-
+* [./Taskbar](/Assets/h7/Taskbar/)
+  * [SetTaskbar.ps1](/Assets//h7/Taskbar/SetTaskbar.ps1)
+  * ja muut...
 ```console
 $ vagrant up
 $ vagrant ssh master
@@ -133,7 +149,8 @@ $ sudo salt '*' state.apply winpro
 ```
 
 ### [Vagrantfile](/Assets/h7/Vagrantfile)
-Tässä luodaan ja provisioidaan Debian-pohjainen Herra ja Windows-pohjainen orja Saltilla ja vaadittavilla konfiguraatioilla.
+Tässä luodaan ja provisioidaan Debian-pohjainen Herra ja Windows-pohjainen orja Saltilla. Tarvittattavat konfiguraatiot ja tiedostot kopioidaan tässä Herralle ja orjalle sekä asennetaan Salt.
+
 ```ruby
 $master = <<-MASTER
 sudo curl -fsSL -o /etc/apt/keyrings/salt-archive-keyring-2023.gpg https://repo.saltproject.io/salt/py3/debian/11/amd64/SALT-PROJECT-GPG-PUBKEY-2023.gpg
@@ -196,30 +213,32 @@ Vagrant.configure("2") do |config|
 			run: "always"
 			
 		win11.vm.provision "shell",
-			inline: 'Set-Location -Path "C:/Users/vagrant"; Invoke-WebRequest -Uri "https://repo.saltproject.io/salt/py3/windows/latest/Salt-Minion-3006.4-Py3-AMD64-Setup.exe" -OutFile "setup.exe"; Start-Process -Wait -FilePath ".\setup.exe" -ArgumentList "/S"; Remove-Item -Path "setup.exe" -Force',
+			inline: 'Invoke-WebRequest -Uri "https://repo.saltproject.io/windows/Salt-Minion-Latest-Py3-AMD64-Setup.exe" -OutFile "C:/tmp/setup.exe"; Start-Process C:/tmp/setup.exe /S; slmgr.vbs /ato',
 			run: "once"
-			
-		win11.vm.provision "shell",
-			inline: 'Restart-Service -Name "salt-minion" -Force; slmgr.vbs /ato',
-			run: "always"
+
+		win11.vm.provision "file",
+			source: "./Taskbar",
+			destination: "C:/tmp",
+			run: "once"
 	end
 end
 ```
 
 ### [master_ip.ps1](/Assets/h7/master_ip.ps1)
-Tämä liittyy purkkafiksiini sille, että Vagrant ei tue kovin hyvin vielä verkkojen määrittelyä Hyper-V:n kanssa. Esitelty ensimmäisen kerran tehtävässä [h2](/h2.md).
+Tämä liittyy purkkafiksiini sille, että Vagrant ei tue kovin hyvin vielä verkkojen määrittelyä Hyper-V:n kanssa. Esitelty ensimmäisen kerran tehtävässä [h2](/h2.md). Eli lyhyesti, luo Saltin ```minion``` -konfiguraatio tiedoston masterin IP osoitteella aina ```$ Vagrant up``` -komennon yhteydessä, joka samalla kopioidaan Vagrantin konfiguraatiossa orjille.
+
 ```powershell
 $IP = Get-VMNetworkAdapter -VMName master | Select -ExpandProperty IPAddresses
 Set-Content -Path ./minion -Value "master: ${IP}"
 ```
 
 ### [init.sls](/Assets/h7/init.sls)
-Tässä on Salt-tilan ```winpro``` ensimmäinen tiedosto, tässä asennetaan Windows-orjalle Firefox, NotePad++ sekä NanaZip. Näiden lisäksi Firefoxille asetetaan muutamat asetukset ja asennetaan kaksi laajennosta uBlockOrigin ja Dark Reader. Lopuksi viitataan Windowsin asetuksia määrittelevään Saltin state tiedostoon (SLS).
+Tässä on Salt-tilan ```winpro``` ensimmäinen tiedosto, tässä asennetaan Windows-orjalle Firefox, Notepad++ sekä NanaZip. Näiden lisäksi Firefoxille asetetaan muutamat asetukset ja asennetaan kaksi laajennosta uBlockOrigin ja Dark Reader. Lopuksi viitataan Windowsin asetuksia määrittelevään Saltin state tiedostoon (SLS) sekä tehtäväpalkin asetteluskriptiin.
 
 ```yaml
 ### /srv/salt/winpro/init.sls
 
-### Install apps
+### Install apps // Firefox, Notepad++ & NanaZip
 
 install:
   pkg.installed:
@@ -233,7 +252,6 @@ install_NanaZip:
     - unless: "if (Get-AppxPackage | Where-Object { $_.PackageFamilyName -eq '40174MouriNaruto.NanaZip_gnj4mf6z9tkrc' }) { exit 0 } else { exit 1 }"
     - runas: Vagrant
     - shell: powershell
-
 
 
 ### Firefox Extensions
@@ -302,10 +320,19 @@ PromptForDownloadLocation:
 
 include:
   - winpro.jinja
+
+### Idempotence not working, runs always
+C:\tmp\Taskbar\SetTaskbar.ps1:
+  cmd.run:
+    - onlyif:
+      - file.exists:
+        - name: C:/tmp/Taskbar/notconfigured
+    - runas: Vagrant
+    - shell: powershell
 ```
 
 ### [jinja.sls](/Assets/h7/jinja.sls)
-Tässä määritellään muutama rekisteriarvo:
+Tässä määritellään muutama rekisteriarvo käyttäen hyväksi jinjaa, [pohjan lähde](https://github.com/saltstack/salt/issues/64258#issuecomment-1545384343). Tämä siksi, koska halutaan asettaa nämä arvot kirjautuneen käyttäjän ```Vagrant``` HKEY_CURRENT_USER alle, jotta tulee voimaan.
 * Tumma teema päälle
 * Säädetään tehtäväpalkki vasempaan reunaan
 * Laitetaan tunnettujen tiedostotyyppien päätteet näkymään
@@ -333,14 +360,14 @@ DarkMode2:
 
 TaskbarAlignmentLeft:
   reg.present:
-    - name: HKEY_USERS\.DEFAULT\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced
+    - name: HKEY_USERS\{{ sid }}\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced
     - vname: TaskbarAl
     - vdata: 0
     - vtype: REG_DWORD
 
 ShowFileExtensions:
   reg.present:
-    - name: HKEY_USERS\.DEFAULT\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced
+    - name: HKEY_USERS\{{ sid }}\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced
     - vname: HideFileExt
     - vdata: 0
     - vtype: REG_DWORD
@@ -348,6 +375,34 @@ ShowFileExtensions:
   {% endif %}
 {% endfor %}
 ```
+
+### [/Taskbar](/Assets/h7/Taskbar/)
+Tämä kansio sisältää skriptin työkalupalkin pikakuvakkeiden asettamiseen, ei ole hirveän kaunis ratkaisu, mutta toimii. Eli työkalupalkiin kiinnitetään Firefox, Notepad++ ja NanaZip. [init.sls](/Assets/h7/init.sls) laukaisee tämän viimeisenä, mutta jostain syystä en saanut sitä idempotentiksi, eli tämä ajetaan aina ```winpro``` -tilan ajossa. Ei vaikuta muuten kuin, että jos käyttäjä kiinnittää muita sovelluksia työkalupalkkiin, niin ne häviää tämän ajon jälkeen.
+
+#### [/Taskbar/SetTaskbar.ps1](/Assets/h7/Taskbar/SetTaskbar.ps1)
+```powershell
+# Remove existing shortcuts
+Remove-Item -Path "$env:APPDATA\Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar\*" -Force -Recurse
+
+# Copy new shortcuts
+Copy-Item -Path "C:\tmp\Taskbar\Shorcuts\*" -Destination "$env:APPDATA\Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar\" -Force
+
+# Import registry settings
+reg import "C:\tmp\Taskbar\Taskbar.reg"
+
+# Restart explorer
+Stop-Process -Name explorer -Force
+Start-Process explorer
+
+# Remove checkfile
+Remove-Item -Path C:\tmp\Taskbar\notconfigured
+```
+
+### Kuvitus lähtötilanteesta
+![Alku](/Assets/h7/alku.png)
+
+### Kuvitus lopputilanteesta
+![Loppu](/Assets/h7/loppu.png)
 
 ## Tehtävänanto
 

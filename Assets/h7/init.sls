@@ -16,7 +16,6 @@ install_NanaZip:
     - shell: powershell
 
 
-
 ### Firefox Extensions
 
 firefox_uBO:
@@ -83,3 +82,12 @@ PromptForDownloadLocation:
 
 include:
   - winpro.jinja
+
+### Idempotence not working, runs always
+C:\tmp\Taskbar\SetTaskbar.ps1:
+  cmd.run:
+    - onlyif:
+      - file.exists:
+        - name: C:/tmp/Taskbar/notconfigured
+    - runas: Vagrant
+    - shell: powershell
